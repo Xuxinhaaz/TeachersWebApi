@@ -142,3 +142,5 @@ C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\api\bin\D
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\api\bin\Debug\net8.0\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\api\obj\Debug\net8.0\Api.csproj.AssemblyReference.cache
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\api\obj\Debug\net8.0\Api.csproj.CopyComplete
+C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\api\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\api\bin\Debug\net8.0\FluentValidation.dll
