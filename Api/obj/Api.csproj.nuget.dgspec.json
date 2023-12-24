@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\Api\\Api.csproj": {}
+    "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\api\\Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\Api\\Api.csproj": {
+    "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\api\\Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\Api\\Api.csproj",
+        "projectUniqueName": "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\api\\Api.csproj",
         "projectName": "Api",
-        "projectPath": "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\Api\\Api.csproj",
+        "projectPath": "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\api\\Api.csproj",
         "packagesPath": "C:\\Users\\caiom\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\Api\\obj\\",
+        "outputPath": "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\caiom\\AppData\\Roaming\\NuGet\\NuGet.Config",

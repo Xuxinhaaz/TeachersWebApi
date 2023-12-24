@@ -3,6 +3,7 @@ using Api.Controllers;
 using Api.Data;
 using Api.Models.Dtos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -38,8 +39,16 @@ var options = new DbContextOptionsBuilder<AppDBContext>()
 
 var HomeController = new Home(new AppDBContext(options));
 var UserController = new UsersController(new AppDBContext(options), builder.Configuration);
+var TeacherController = new TeachersController(new AppDBContext(options), builder.Configuration);
 
 app.MapGet("/", HomeController.OnGetAll);
+
+app.MapGet("/apiv1/GetUser/{ID}", ([FromRoute] string ID) => UserController.GetUser(ID));
 app.MapPost("/apiv1/PostNewUser", (UserDto dto) => UserController.PostNewUser(dto));
+app.MapPost("/apiv1/PostNewUsersProfile/{ID}", ([FromBody] UsersProfileDto dto, [FromRoute] string ID) => UserController.PostUsersProfile(dto, ID));
+app.MapDelete("/apiv1/DeleteUser/{ID}", ([FromRoute] string ID) => UserController.DeleteUser(ID));
+
+app.MapPost("/apiv1/PostNewTeacher", (TeacherDto dto) => TeacherController.PostNewTeacher(dto));
+app.MapPost("/apiv1/PostNewTeachersProfile/{ID}", ([FromBody] TeachersProfileDto dto, [FromRoute] string ID) => TeacherController.PostNewTeachersProfile(dto, ID));
 
 app.Run();
