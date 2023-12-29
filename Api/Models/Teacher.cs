@@ -14,6 +14,6 @@ namespace Api.Models
         public string? Email { get; set; }
         public string? HashedPassword { get; set; }
         public string? SingleProperty { get; set; }
-        
+        public string IsTeacher = "true";
     }
 }

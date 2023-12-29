@@ -11,5 +11,6 @@ namespace Api.Models.Dtos
         public string Password { get; set; }
         public string Email { get; set; }
         public string singleProperty { get; set; }
+        public string IsTeacher = "true";
     }
 }

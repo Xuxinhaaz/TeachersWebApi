@@ -10,6 +10,7 @@ using Api.Services;
 using BCrypt.Net;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Update;
 
 namespace Api.Controllers
 {
@@ -38,19 +39,23 @@ namespace Api.Controllers
 
             var jwtService = new JwtService(Configuration);
 
-            var strToken = jwtService.Generate(dto);
+            var strToken = jwtService.GenerateUserJwt(dto);
 
-            var newUser = new User();
-
-            newUser.UsersID = Guid.NewGuid().ToString();
-            newUser.Name = dto.Name;
-            newUser.HashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-            newUser.Email = dto.Email;
+            var newUser = new User(){
+                Email = dto.Email,
+                HashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                IsTeacher = "false",
+                UsersID = Guid.NewGuid().ToString(),
+                Name = dto.Name
+            };
 
             await Context.Users.AddAsync(newUser);
             await Context.SaveChangesAsync();
 
-            return Results.Ok(new List<string>{ strToken, newUser.UsersID });
+            return Results.Ok(new { 
+                newUser,
+                strToken
+            });
         }
 
         public async Task<IResult> GetUser(string ID)

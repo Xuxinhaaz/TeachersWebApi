@@ -48,7 +48,15 @@ app.MapPost("/apiv1/PostNewUser", (UserDto dto) => UserController.PostNewUser(dt
 app.MapPost("/apiv1/PostNewUsersProfile/{ID}", ([FromBody] UsersProfileDto dto, [FromRoute] string ID) => UserController.PostUsersProfile(dto, ID));
 app.MapDelete("/apiv1/DeleteUser/{ID}", ([FromRoute] string ID) => UserController.DeleteUser(ID));
 
-app.MapPost("/apiv1/PostNewTeacher", (TeacherDto dto) => TeacherController.PostNewTeacher(dto));
-app.MapPost("/apiv1/PostNewTeachersProfile/{ID}", ([FromBody] TeachersProfileDto dto, [FromRoute] string ID) => TeacherController.PostNewTeachersProfile(dto, ID));
+app.MapPost("/apiv1/PostNewTeacher", 
+  (TeacherDto dto) => 
+  TeacherController.PostNewTeacher(dto));
+app.MapPost("/apiv1/PostNewTeachersProfile/{ID}", 
+  ([FromBody] TeachersProfileDto dto, [FromRoute] string ID, [FromHeader] string Authorization) => 
+  TeacherController.PostNewTeachersProfile(dto, ID, Authorization));
+app.MapDelete("/apiv1/DeleteATeacher/{ID}", 
+  ([FromRoute] string ID, [FromHeader] string Authorization) => 
+  TeacherController.DeleteATeacher(ID, Authorization));
+  
 
-app.Run();
+app.Run();  

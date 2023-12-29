@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "2X/vSv8FbIP3DdeCeWJX0L8C+wLdR9Q7FN44+9PSIC1zyrpFEDWqvkBB8zKsX4kjZ6yRIMSe602h4k5i23TpzA==",
+  "dgSpecHash": "FeV4Hv9GuvRwX62qREcbRDLacElRckCilzwa/2VhaGJEb2eFmHsRtTkCF2jghrRfM8V4An6tDls3bgupKUKphw==",
   "success": true,
-  "projectFilePath": "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\api\\Api.csproj",
+  "projectFilePath": "C:\\Users\\caiom\\OneDrive\\Documentos\\VS Code\\DotnetVSCode\\TeachersWebApi\\Api\\Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\caiom\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",
     "C:\\Users\\caiom\\.nuget\\packages\\azure.identity\\1.7.0\\azure.identity.1.7.0.nupkg.sha512",

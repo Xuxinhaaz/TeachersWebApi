@@ -9,6 +9,7 @@ using Api.Models.TeachersRelation;
 using Api.Services;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Update;
 
 namespace Api.Controllers
 {
@@ -38,7 +39,7 @@ namespace Api.Controllers
 
             var jwtService = new JwtService(Configuration);
             
-            var strToken = jwtService.Generate(dto);
+            var strToken = jwtService.GenerateTeachersJwt(dto);
 
             var newTeacher = new Teacher(){
                 Name = dto.Name,
@@ -57,11 +58,20 @@ namespace Api.Controllers
             });
         }
 
-        public async Task<IResult> PostNewTeachersProfile(TeachersProfileDto dto, string ID)
+        public async Task<IResult> PostNewTeachersProfile(TeachersProfileDto dto, string ID, string AuthToken)
         {
             if(string.IsNullOrEmpty(ID))
                 return Results.BadRequest("Id provided must not be empty");
+
+            if(string.IsNullOrEmpty(AuthToken))
+                return Results.Unauthorized();
             
+            /* var strToken = AuthToken.Replace("Bearer ", "");
+            var jwtService = new JwtService(Configuration);
+            var responseJwtServiceValidation = await jwtService.ValidateUsersJwt(strToken);
+            if(!responseJwtServiceValidation)
+                return Results.Unauthorized(); */
+
             var result = ModelValidator.ValidateTeachersProfile(dto);
             var errors = new Dictionary<string, dynamic>();
             if(!result.IsValid)
@@ -71,6 +81,16 @@ namespace Api.Controllers
                 return Results.BadRequest(errors);
             }
             
+            var TeacherChecks = new TeachersCheck(Context);
+            var checksIfTeachersProfileExists = await TeacherChecks.CheckIfExistsTeachersProfile(ID);
+
+            if(checksIfTeachersProfileExists){
+                errors["Errors"] = "TeachersProfile with this ID alredy exists!";
+
+                return Results.BadRequest(errors);
+            }
+                            
+
             var anyUserWithProvidedID = await Context.Teachers.AnyAsync(x => x.TeachersID == ID);
             if(!anyUserWithProvidedID)
             {
@@ -81,7 +101,8 @@ namespace Api.Controllers
 
             var teacher = await Context.Teachers.FirstAsync(x => x.TeachersID == ID);
             
-            var teachersProfile = new TeachersProfile(){
+            var teachersProfile = new TeachersProfile()
+            {
                 ProfileID = Guid.NewGuid().ToString(),
                 TeachersProfileID = teacher.TeachersID,
                 Bio = dto.Bio,
@@ -95,5 +116,39 @@ namespace Api.Controllers
 
             return Results.Ok(teachersProfile);
         }
+
+        public async Task<IResult> DeleteATeacher(string ID, string Authorization){
+            var errors = new Dictionary<string, dynamic>();
+            var jwtService = new JwtService(Configuration);
+
+            if(string.IsNullOrEmpty(ID)){
+                errors["Errors"] = "ID must not be empty!";
+
+                return Results.BadRequest(errors);
+            }
+            
+            var strAuth = Authorization.Replace("Bearer ", "");
+            var responseAuth = await jwtService.ValidateTeachersJwt(strAuth);
+            if(!responseAuth)
+                return Results.Unauthorized();
+
+            var anyTeacher = await Context.Teachers.AnyAsync(x => x.TeachersID == ID);
+            var anyTeachersProfile = await Context.TeachersProfiles.AnyAsync(x => x.TeachersProfileID == ID);
+            if(!anyTeacher || !anyTeachersProfile){
+                errors["Errors"] = "There is no teacher profile with this ID!";
+
+                return Results.BadRequest(errors);
+            }
+
+            var firstTeacher = await Context.Teachers.FirstAsync(x => x.TeachersID == ID);
+            var firstTeachersProfile = await Context.TeachersProfiles.FirstAsync(x => x.TeachersProfileID == ID);
+
+            Context.Teachers.Remove(firstTeacher);
+            Context.TeachersProfiles.Remove(firstTeachersProfile);
+            await Context.SaveChangesAsync();
+
+            return Results.Ok("Deleted!");
+        }
+
     }
 }
