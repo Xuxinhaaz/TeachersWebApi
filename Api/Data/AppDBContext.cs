@@ -15,8 +15,8 @@ namespace Api.Data
         {
         }
 
-        public DbSet<User> Users { get; set; }
-        public DbSet<Teacher> Teachers { get; set; }
+        public DbSet<UserModel> Users { get; set; }
+        public DbSet<TeacherModel> Teachers { get; set; }
         public DbSet<TeachersProfile> TeachersProfiles { get; set; }
         public DbSet<UsersProfile> UsersProfiles { get; set; }
     }

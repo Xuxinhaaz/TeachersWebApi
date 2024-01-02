@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Api.Models;
 using Api.Models.Dtos;
+using Api.Application.ViewModels;
 
 namespace Api.Services
 {
@@ -19,7 +20,7 @@ namespace Api.Services
             configuration = _Config;
         }
 
-        public string GenerateUserJwt(UserDto model)
+        public string GenerateUserJwt(UserViewModel viewModel)
         {
             var handler = new JwtSecurityTokenHandler();
 
@@ -31,9 +32,9 @@ namespace Api.Services
             );
 
             var Claims = new ClaimsIdentity(new List<Claim> {
-                new Claim(ClaimTypes.Name, model.Name),
-                new Claim(ClaimTypes.Email, model.Email),
-                new Claim("IsTeacher", model.IsTeacher)
+                new Claim(ClaimTypes.Name, viewModel.Name),
+                new Claim(ClaimTypes.Email, viewModel.Email),
+                new Claim("IsTeacher", viewModel.IsTeacher)
             });
 
             var tokenDescriptor = new SecurityTokenDescriptor()

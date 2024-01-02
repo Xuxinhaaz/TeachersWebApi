@@ -23,31 +23,31 @@ namespace Api.Controllers
             Configuration = _configuration;
         }
 
+        public async Task<IResult> GetTeachers(int pageNumber)
+        {
+            var Teachers = await Context.Teachers.Skip(pageNumber * 5).Take(5).ToListAsync();
+
+            return Results.Ok(new {
+                Teachers
+            });
+        }
+
         public async Task<IResult> PostNewTeacher(TeacherDto dto)
         {
-            if(dto is null)
-                return Results.BadRequest("send the data we need to register a teacher!");
-
             var result = ModelValidator.ValidateTeacherModel(dto);
-            var errors = new Dictionary<string, List<ValidationFailure>>(); 
-
-            if(!result.IsValid){
-                errors["Errors"] = result.Errors.ToList();
-
-                return Results.BadRequest(errors);
-            }
-
+            var errors = new Dictionary<string, dynamic>(); 
             var jwtService = new JwtService(Configuration);
             
+            if(dto is null)
+                return Results.BadRequest("send the data we need to register a teacher!");  
+                
+
+            if(!result.IsValid)
+                return await ApisEndpointServices.BadRequestWithMessage(result.Errors.ToList(), errors);
+
             var strToken = jwtService.GenerateTeachersJwt(dto);
 
-            var newTeacher = new Teacher(){
-                Name = dto.Name,
-                TeachersID = Guid.NewGuid().ToString(),
-                Email = dto.Email,
-                SingleProperty = dto.singleProperty,
-                HashedPassword = dto.Password
-            };
+            var newTeacher = ApisEndpointServices.GenerateTeacher(dto);
 
             await Context.Teachers.AddAsync(newTeacher);
             await Context.SaveChangesAsync();
@@ -60,57 +60,39 @@ namespace Api.Controllers
 
         public async Task<IResult> PostNewTeachersProfile(TeachersProfileDto dto, string ID, string AuthToken)
         {
+            var errors = new Dictionary<string, dynamic>();
+            var jwtService = new JwtService(Configuration);
+            
             if(string.IsNullOrEmpty(ID))
-                return Results.BadRequest("Id provided must not be empty");
+                return await ApisEndpointServices.BadRequestWithMessage("Teacher ID must not be empty.", errors);
 
             if(string.IsNullOrEmpty(AuthToken))
                 return Results.Unauthorized();
             
-            /* var strToken = AuthToken.Replace("Bearer ", "");
-            var jwtService = new JwtService(Configuration);
+            var strToken = AuthToken.Replace("Bearer ", "");
             var responseJwtServiceValidation = await jwtService.ValidateUsersJwt(strToken);
             if(!responseJwtServiceValidation)
-                return Results.Unauthorized(); */
+                return Results.Unauthorized();
 
             var result = ModelValidator.ValidateTeachersProfile(dto);
-            var errors = new Dictionary<string, dynamic>();
             if(!result.IsValid)
-            {
-                errors["Errors"] = result.Errors;
-
-                return Results.BadRequest(errors);
-            }
+                return await ApisEndpointServices.BadRequestWithMessage(result.Errors.ToList(), errors);
             
             var TeacherChecks = new TeachersCheck(Context);
             var checksIfTeachersProfileExists = await TeacherChecks.CheckIfExistsTeachersProfile(ID);
 
-            if(checksIfTeachersProfileExists){
-                errors["Errors"] = "TeachersProfile with this ID alredy exists!";
-
-                return Results.BadRequest(errors);
-            }
+            if(checksIfTeachersProfileExists)
+                return await ApisEndpointServices.BadRequestWithMessage("No teachers profile found with the provided ID.", errors);
                             
 
             var anyUserWithProvidedID = await Context.Teachers.AnyAsync(x => x.TeachersID == ID);
             if(!anyUserWithProvidedID)
-            {
-                errors["Errors"] = "ID provided does not match any teacher!";
-
-                return Results.BadRequest(errors);
-            }
+                return await ApisEndpointServices.BadRequestWithMessage("No teacher found with the provided ID.", errors);
 
             var teacher = await Context.Teachers.FirstAsync(x => x.TeachersID == ID);
             
-            var teachersProfile = new TeachersProfile()
-            {
-                ProfileID = Guid.NewGuid().ToString(),
-                TeachersProfileID = teacher.TeachersID,
-                Bio = dto.Bio,
-                Description = dto.Description,
-                TeachersName = dto.Name,
-                TeachersTraining = dto.Email
-            };
-
+            var teachersProfile = ApisEndpointServices.GenerateTeachersProfile(dto, teacher);
+            
             await Context.TeachersProfiles.AddAsync(teachersProfile);
             await Context.SaveChangesAsync();
 
@@ -122,7 +104,7 @@ namespace Api.Controllers
             var jwtService = new JwtService(Configuration);
 
             if(string.IsNullOrEmpty(ID)){
-                errors["Errors"] = "ID must not be empty!";
+                errors["Errors"] = "Teacher's ID must not be empty!"; 
 
                 return Results.BadRequest(errors);
             }
@@ -135,7 +117,7 @@ namespace Api.Controllers
             var anyTeacher = await Context.Teachers.AnyAsync(x => x.TeachersID == ID);
             var anyTeachersProfile = await Context.TeachersProfiles.AnyAsync(x => x.TeachersProfileID == ID);
             if(!anyTeacher || !anyTeachersProfile){
-                errors["Errors"] = "There is no teacher profile with this ID!";
+                errors["Errors"] = "No teacher found with the provided ID.";
 
                 return Results.BadRequest(errors);
             }

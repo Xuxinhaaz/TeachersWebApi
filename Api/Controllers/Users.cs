@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Api.Application.Repositories;
+using Api.Application.Repositories.User;
+using Api.Application.ViewModels;
+using Api.Application.ViewModels.Users;
 using Api.Data;
 using Api.Models;
 using Api.Models.Dtos;
@@ -16,121 +20,132 @@ namespace Api.Controllers
 {
     public class UsersController
     {
-        private readonly AppDBContext Context;
+        private readonly AppDBContext _context;
         private readonly IConfiguration Configuration;
-
-        public UsersController(AppDBContext _context, IConfiguration configuration)
+        private readonly UserRepository _UsersRepo;
+        private readonly UsersProfileRepository _UsersProfileRepo;
+        public UsersController(AppDBContext Context, IConfiguration configuration, UserRepository UsersRepo, UsersProfileRepository UsersProfileRepository)
         {
-            Context = _context;
+            _context = Context;
             Configuration = configuration;
+            _UsersRepo = UsersRepo;
+            _UsersProfileRepo = UsersProfileRepository;
         }
 
-        public async Task<IResult> PostNewUser(UserDto dto)
+        public async Task<IResult> PostNewUser(UserViewModel viewModel)
         {
-            var result = ModelValidator.ValidateUserModel(dto);
-
-            var Erros = new Dictionary<string, List<ValidationFailure>>();
-
-            if(!result.IsValid){
-                    Erros["errors"] = new List<ValidationFailure>(result.Errors);
-                    
-                    return Results.BadRequest(Erros);
-            }
-
+            var result = ModelValidator.ValidateUserModel(viewModel);
+            var errors = new Dictionary<string, dynamic>();
             var jwtService = new JwtService(Configuration);
 
-            var strToken = jwtService.GenerateUserJwt(dto);
+            if(!result.IsValid)
+                return await ApisEndpointServices.BadRequestWithMessage(result.Errors.ToList(), errors);
 
-            var newUser = new User(){
-                Email = dto.Email,
-                HashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                IsTeacher = "false",
-                UsersID = Guid.NewGuid().ToString(),
-                Name = dto.Name
+
+            var Token = jwtService.GenerateUserJwt(viewModel);
+
+            var UserModel = _UsersRepo.Generate(viewModel);
+
+            await _context.Users.AddAsync(UserModel);
+            await _context.SaveChangesAsync();
+
+            var User = new UserDto{
+                Email = UserModel.Email,
+                UserID = UserModel.UsersID,
+                Name = UserModel.Name
             };
 
-            await Context.Users.AddAsync(newUser);
-            await Context.SaveChangesAsync();
-
             return Results.Ok(new { 
-                newUser,
-                strToken
+                User,
+                Token
             });
         }
 
-        public async Task<IResult> GetUser(string ID)
+        public async Task<IResult> GetUserByID(string ID)
         {
-            var tryFindUser = await Context.Users.AnyAsync(x => x.UsersID == ID);
+            var errors = new Dictionary<string, dynamic>();
+
+            var tryFindUser = await _context.Users.AnyAsync(x => x.UsersID == ID);
 
             if(!tryFindUser)
-                return Results.BadRequest("Couldn't find this user");
+                return await ApisEndpointServices.BadRequestWithMessage("User Not Found.", errors);
 
-            var realUser = await Context.Users.FirstAsync(x => x.UsersID == ID);
+            var User = await _UsersRepo.GetByID(ID);
 
-            return Results.Ok(realUser);
+            return Results.Ok(new {
+                User
+            });
         }
 
-        public async Task<IResult> PostUsersProfile(UsersProfileDto dto, string ID)
+        public async Task<IResult> GetUsers(int pageNumber)
         {
+            var Users = await _UsersRepo.Get(pageNumber);
+
+            return Results.Ok(new { 
+                Users
+            });
+        }
+
+        public async Task<IResult> PostUsersProfile(UsersProfileViewModel viewModel, string ID)
+        {
+            var errors = new Dictionary<string, dynamic>();
+            var result = ModelValidator.ValidateUsersProfile(viewModel);
+            
             if(string.IsNullOrEmpty(ID))
-                return Results.BadRequest("ID must exists!");
-
-            if(dto is null)
-                return Results.BadRequest("U must send infos");
-
-            var result = ModelValidator.ValidateUsersProfile(dto);
-
-            var errors = new Dictionary<string, List<ValidationFailure>>();
+                return await ApisEndpointServices.BadRequestWithMessage("Teacher ID must not be empty.", errors);
 
             if(!result.IsValid)
-            {
-                errors["Errors"] = new List<ValidationFailure>(result.Errors);
+                return await ApisEndpointServices.BadRequestWithMessage(result.Errors.ToList(), errors);
 
-                return Results.BadRequest(errors);
-            }
-
-            var anyUser = await Context.Users.AnyAsync(x => x.UsersID == ID);
-
+            var anyUser = await _context.Users.AnyAsync(x => x.UsersID == ID);
             if(!anyUser)
-                return Results.BadRequest("Couldn't find a user with this ID you provided!");
+                return await ApisEndpointServices.BadRequestWithMessage("No teacher found with the provided ID.", errors);
+            var User = await _context.Users.FirstAsync(x => x.UsersID == ID);
 
-            var User = await Context.Users.FirstAsync(x => x.UsersID == ID);
+            var UsersProfile = await _UsersProfileRepo.Generate(viewModel, ID);
 
-            var UsersProfile = new UsersProfile();
+            await _context.UsersProfiles.AddAsync(UsersProfile);
+            await _context.SaveChangesAsync();
 
-            UsersProfile.ProfileID = User.UsersID;
-            UsersProfile.UsersProfileID = Guid.NewGuid().ToString();
-            UsersProfile.UserName = User.Name;
-            UsersProfile.Bio = dto.Bio;
-            UsersProfile.Description = dto.Description;
-            UsersProfile.Classroom = dto.Classroom;
-
-            await Context.UsersProfiles.AddAsync(UsersProfile);
-            await Context.SaveChangesAsync();
-
-            return Results.Ok(UsersProfile);
+            return Results.Ok(new {
+                UsersProfile
+            });
         }
 
         public async Task<IResult> DeleteUser(string ID)
         {
-            if(string.IsNullOrEmpty(ID))
-                return Results.BadRequest("ID must exists!");
+            var errors = new Dictionary<string, dynamic>();
 
-            var anyUser = await Context.Users.AnyAsync(x => x.UsersID == ID);
-            var anyUsersProfile = await Context.UsersProfiles.AnyAsync(x => x.ProfileID == ID);
+            if(string.IsNullOrEmpty(ID))
+                return await ApisEndpointServices.BadRequestWithMessage("Teacher ID must not be empty.", errors);
+
+            var anyUser = await _context.Users.AnyAsync(x => x.UsersID == ID);
+            var anyUsersProfile = await _context.UsersProfiles.AnyAsync(x => x.ProfileID == ID);
 
             if(!anyUser || !anyUsersProfile)
-                return Results.BadRequest("Couldn't find a user with this ID you provided!");
+                return await ApisEndpointServices.BadRequestWithMessage("No teacher found with the provided ID.", errors);
 
-            var User = await Context.Users.FirstAsync(x => x.UsersID == ID);
-            var UsersProfile = await Context.UsersProfiles.FirstAsync(x => x.ProfileID == ID);
+            var User = await _context.Users.FirstAsync(x => x.UsersID == ID);
+            var UsersProfile = await _context.UsersProfiles.FirstAsync(x => x.ProfileID == ID);
 
 
-            Context.Users.Remove(User);
-            Context.UsersProfiles.Remove(UsersProfile);
-            await Context.SaveChangesAsync();
+            _context.Users.Remove(User);
+            _context.UsersProfiles.Remove(UsersProfile);
+            await _context.SaveChangesAsync();
 
-            return Results.Ok("Deleted!");
+            return Results.Ok(new {
+                Message = "Deleted!"
+            });
+        }
+
+        public async Task<IResult> DeleteMax()
+        {
+            
+
+            _context.Users.RemoveRange(await _context.Users.ToListAsync());
+            await _context.SaveChangesAsync();
+
+            return Results.Ok();
         }
 
     }

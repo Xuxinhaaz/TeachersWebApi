@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 
 namespace Api.Models.Dtos
 {
-    public class UserDto : IModel
+    public class UsersProfileDto
     {
+        public string? Description { get; set; }
+        public string? Bio { get; set; }
+        public string? Classroom { get; set; }
         public string? Name { get; set; }
-        public string? Password { get; set; }
-        public string? Email { get; set; }
-        public string? IsTeacher = "false";
     }
 }

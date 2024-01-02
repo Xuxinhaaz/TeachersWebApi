@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Api.Application.ViewModels;
+using Api.Application.ViewModels.Users;
 using Api.Models.Dtos;
 using Api.Services.ModelsValidator;
 using Api.Services.ModelsValidator.TeachersRelationValidator;
@@ -14,38 +16,38 @@ namespace Api.Services
 {
     public static class ModelValidator
     {
-        public static ValidationResult ValidateUserModel(UserDto dto)
+        public static ValidationResult ValidateUserModel(UserViewModel viewModel)
         {
             var validator = new UserValidator();
 
-            ValidationResult result = validator.Validate(dto);
+            ValidationResult result = validator.Validate(viewModel);
             
             return result;
         }
 
-        public static ValidationResult ValidateUsersProfile(UsersProfileDto dto)
+        public static ValidationResult ValidateUsersProfile(UsersProfileViewModel viewModel)
         {
             var validor = new UsersProfileValidator();
 
-            ValidationResult result = validor.Validate(dto);
+            ValidationResult result = validor.Validate(viewModel);
 
             return result;
         }
 
-        public static ValidationResult ValidateTeacherModel(TeacherDto dto)
+        public static ValidationResult ValidateTeacherModel(TeacherDto viewModel)
         {
             var validator = new TeacherValidator();
 
-            ValidationResult result = validator.Validate(dto);
+            ValidationResult result = validator.Validate(viewModel);
 
             return result;
         }
 
-        public static ValidationResult ValidateTeachersProfile(TeachersProfileDto dto)
+        public static ValidationResult ValidateTeachersProfile(TeachersProfileDto viewModel)
         {
             var validator = new TeachersProfileValidator();
 
-            var result = validator.Validate(dto);
+            var result = validator.Validate(viewModel);
 
             return result;
         }
