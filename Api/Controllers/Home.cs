@@ -18,7 +18,6 @@ namespace Api.Controllers
 
         public IResult OnGetAll()
         {
-
             return Results.Ok(new List<object>(){  
                 Context.Users.ToList(),
                 Context.Teachers.ToList(),

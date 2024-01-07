@@ -21,37 +21,57 @@ namespace Api.Controllers
     public class TeachersController
     {
              private readonly IJwtService _jwtService;
-             private readonly AppDBContext Context;
-             private readonly IConfiguration Configuration;
-             private readonly TeacherRepository _TeachersRepo;
-             private readonly TeachersProfileRepository _TeachersProfileRepo;
+             private readonly AppDBContext _context;
+             private readonly ITeacherRepository _teachersRepo;
+             private readonly ITeachersProfileRepository _teachersProfileRepo;
              public TeachersController(
-                 AppDBContext _context, 
-                 IConfiguration _configuration, 
-                 TeacherRepository teacherRepo,
-                 TeachersProfileRepository teachersProfileRepo,
+                 AppDBContext context, 
+                 ITeacherRepository teacherRepo,
+                 ITeachersProfileRepository teachersProfileRepo,
                  IJwtService jwtService
              )
              {
-                 Context = _context;
-                 Configuration = _configuration;
-                 _TeachersRepo = teacherRepo;
-                 _TeachersProfileRepo = teachersProfileRepo;
+                 _context = context;
+                 _teachersRepo = teacherRepo;
+                 _teachersProfileRepo = teachersProfileRepo;
                  _jwtService = jwtService;
              }
      
-             public async Task<IResult> GetTeachers(int pageNumber, string Authroization)
+             public async Task<IResult> GetTeachers(int pageNumber, string authorization)
              {
-                 var strToken = Authroization.Replace("Bearer ", "");
+                 var strToken = authorization.Replace("Bearer ", "");
                  var responseAuth = await _jwtService.ValidateTeachersJwt(strToken);
                  if (!responseAuth)
                      return Results.Unauthorized();
                  
-                 var TeachersModels = await _TeachersRepo.Get(pageNumber);
+                 var teacherModels = await _teachersRepo.Get(pageNumber);
                  
-                 var teachersDto = _TeachersRepo.MapEntities(TeachersModels); 
+                 var teachersDto = _teachersRepo.MapEntities(teacherModels); 
                  return Results.Ok(new {
                      Teachers = teachersDto
+                 });
+             }
+             
+             public async Task<IResult> GetTeacherByid(string id, string authorization)
+             {
+                 var errors = new Dictionary<string, dynamic>();
+            
+                 var strToken = authorization.Replace("Bearer ", "");
+                 var responseAuth = await _jwtService.ValidateTeachersJwt(strToken);
+                 if (!responseAuth)
+                     return Results.Unauthorized();
+
+                 var tryFindTeacher = await _context.Teachers.AnyAsync(x => x.TeachersID == id);
+
+                 if(!tryFindTeacher)
+                     return await ApisEndpointServices.BadRequestWithMessage("User Not Found.", errors);
+
+                 var teacher = await _teachersRepo.GetByID(id);
+
+                 var teacherDto = _teachersRepo.MapEntity(teacher);
+
+                 return Results.Ok(new {
+                     teacher = teacherDto
                  });
              }
      
@@ -59,7 +79,6 @@ namespace Api.Controllers
              {
                  var result = ModelValidator.ValidateTeacherModel(viewModel);
                  var errors = new Dictionary<string, dynamic>(); 
-                 var jwtService = new JwtService(Configuration);
                  
                  if(viewModel is null)
                      return Results.BadRequest("send the data we need to register a teacher!");  
@@ -68,27 +87,27 @@ namespace Api.Controllers
                  if(!result.IsValid)
                      return await ApisEndpointServices.BadRequestWithMessage(result.Errors.ToList(), errors);
      
-                 var strToken = jwtService.GenerateTeachersJwt(viewModel);
+                 var strToken = _jwtService.GenerateTeachersJwt(viewModel);
      
-                 var newTeacher = _TeachersRepo.Generate(viewModel);
+                 var newTeacher = _teachersRepo.Generate(viewModel);
      
-                 await Context.Teachers.AddAsync(newTeacher);
-                 await Context.SaveChangesAsync();
+                 await _context.Teachers.AddAsync(newTeacher);
+                 await _context.SaveChangesAsync();
      
-                 var TeacherDto = _TeachersRepo.MapEntity(newTeacher);
+                 var teacherDto = _teachersRepo.MapEntity(newTeacher);
      
                  return Results.Ok(new {
-                     Teacher = TeacherDto,
+                     teacher = teacherDto,
                      Token = strToken
                  });
              }
      
-             public async Task<IResult> PostNewTeachersProfile(TeachersProfileViewModel viewModel, string ID, string AuthToken)
+             public async Task<IResult> PostNewTeachersProfile(TeachersProfileViewModel viewModel, string id, string AuthToken)
              {
                  var errors = new Dictionary<string, dynamic>();
                  
-                 if(string.IsNullOrEmpty(ID))
-                     return await ApisEndpointServices.BadRequestWithMessage("Teacher ID must not be empty.", errors);
+                 if(string.IsNullOrEmpty(id))
+                     return await ApisEndpointServices.BadRequestWithMessage("teacher id must not be empty.", errors);
      
                  if(string.IsNullOrEmpty(AuthToken))
                      return Results.Unauthorized();
@@ -102,125 +121,125 @@ namespace Api.Controllers
                  if(!result.IsValid)
                      return await ApisEndpointServices.BadRequestWithMessage(result.Errors.ToList(), errors);
                  
-                 var TeacherChecks = new TeachersCheck(Context);
-                 var checksIfTeachersProfileExists = await TeacherChecks.CheckIfExistsTeachersProfile(ID);
+                 var TeacherChecks = new TeachersCheck(_context);
+                 var checksIfTeachersProfileExists = await TeacherChecks.CheckIfExistsTeachersProfile(id);
      
                  if(checksIfTeachersProfileExists)
-                     return await ApisEndpointServices.BadRequestWithMessage("No teachers profile found with the provided ID.", errors);
+                     return await ApisEndpointServices.BadRequestWithMessage("No teachers profile found with the provided id.", errors);
                                  
      
-                 var anyUserWithProvidedID = await Context.Teachers.AnyAsync(x => x.TeachersID == ID);
+                 var anyUserWithProvidedID = await _context.Teachers.AnyAsync(x => x.TeachersID == id);
                  if(!anyUserWithProvidedID)
-                     return await ApisEndpointServices.BadRequestWithMessage("No teacher found with the provided ID.", errors);
+                     return await ApisEndpointServices.BadRequestWithMessage("No teacher found with the provided id.", errors);
      
-                 var teacher = await Context.Teachers.FirstAsync(x => x.TeachersID == ID);
+                 var teacher = await _context.Teachers.FirstAsync(x => x.TeachersID == id);
                  
-                 var teachersProfile = _TeachersProfileRepo.Generate(viewModel, teacher);
+                 var teachersProfile = _teachersProfileRepo.Generate(viewModel, teacher);
                  
-                 await Context.TeachersProfiles.AddAsync(teachersProfile);
-                 await Context.SaveChangesAsync();
+                 await _context.TeachersProfiles.AddAsync(teachersProfile);
+                 await _context.SaveChangesAsync();
      
-                 var teachersProfileDto = _TeachersProfileRepo.MapEntity(teachersProfile);
+                 var teachersProfileDto = _teachersProfileRepo.MapEntity(teachersProfile);
      
                  return Results.Ok(new {
                      teachersProfile = teachersProfileDto
                  });
              }
      
-             public async Task<IResult> DeleteATeacher(string ID, string Authorization)
+             public async Task<IResult> DeleteATeacher(string id, string authorization)
              {
                  var errors = new Dictionary<string, dynamic>();
      
-                 if(string.IsNullOrEmpty(ID))
-                     return await ApisEndpointServices.BadRequestWithMessage("Teacher's ID must not be empty!", errors);
+                 if(string.IsNullOrEmpty(id))
+                     return await ApisEndpointServices.BadRequestWithMessage("teacher's id must not be empty!", errors);
                  
-                 var strAuth = Authorization.Replace("Bearer ", "");
+                 var strAuth = authorization.Replace("Bearer ", "");
                  var responseAuth = await _jwtService.ValidateTeachersJwt(strAuth);
                  if(!responseAuth)
                      return Results.Unauthorized();
      
-                 var anyTeacher = await Context.Teachers.AnyAsync(x => x.TeachersID == ID);
-                 var anyTeachersProfile = await Context.TeachersProfiles.AnyAsync(x => x.TeachersProfileID == ID);
+                 var anyTeacher = await _context.Teachers.AnyAsync(x => x.TeachersID == id);
+                 var anyTeachersProfile = await _context.TeachersProfiles.AnyAsync(x => x.TeachersProfileID == id);
                  if(!anyTeacher || !anyTeachersProfile)
-                     return await ApisEndpointServices.BadRequestWithMessage("No teacher found with the provided ID.", errors);
+                     return await ApisEndpointServices.BadRequestWithMessage("No teacher found with the provided id.", errors);
      
-                 var firstTeacher = await Context.Teachers.FirstAsync(x => x.TeachersID == ID);
-                 var firstTeachersProfile = await Context.TeachersProfiles.FirstAsync(x => x.TeachersProfileID == ID);
+                 var firstTeacher = await _context.Teachers.FirstAsync(x => x.TeachersID == id);
+                 var firstTeachersProfile = await _context.TeachersProfiles.FirstAsync(x => x.TeachersProfileID == id);
      
-                 Context.Teachers.Remove(firstTeacher);
-                 Context.TeachersProfiles.Remove(firstTeachersProfile);
-                 await Context.SaveChangesAsync();
+                 _context.Teachers.Remove(firstTeacher);
+                 _context.TeachersProfiles.Remove(firstTeachersProfile);
+                 await _context.SaveChangesAsync();
      
                  return Results.Ok(new {
                      message = "Deleted!"
                  });
              }
      
-             public async Task<IResult> PutATeacher(string ID, string Authorization, PutTeachersViewModel model)
+             public async Task<IResult> PutATeacher(string id, string authorization, PutTeachersViewModel model)
              {
-                 var TeachersCheck = new TeachersCheck(Context);
+                 var teachersCheck = new TeachersCheck(_context);
                  var errors = new Dictionary<string, dynamic>();
                  
-                 if(string.IsNullOrEmpty(ID))
-                     return await ApisEndpointServices.BadRequestWithMessage("No Teacher found with provided ID!", errors);
+                 if(string.IsNullOrEmpty(id))
+                     return await ApisEndpointServices.BadRequestWithMessage("No teacher found with provided id!", errors);
                  
                  var responseValidator = ModelValidator.ValidatePutTeachersModel(model);
                  if(!responseValidator.IsValid)
                      return await ApisEndpointServices.BadRequestWithMessage(responseValidator.Errors.ToList(), errors);
      
-                 var strToken = Authorization.Replace("Bearer ", "");
+                 var strToken = authorization.Replace("Bearer ", "");
                  var responseAuth = await _jwtService.ValidateTeachersJwt(strToken);
                  if(!responseAuth)
                      return Results.Unauthorized();
                  
-                 var checkingResult = await TeachersCheck.CheckIfExistsTeacher(ID);
+                 var checkingResult = await teachersCheck.CheckIfExistsTeacher(id);
                  if(!checkingResult)
-                     return await ApisEndpointServices.BadRequestWithMessage("No Teacher found with provided ID!", errors);
+                     return await ApisEndpointServices.BadRequestWithMessage("No teacher found with provided id!", errors);
      
-                 var TeacherFound = await Context.Teachers.FirstAsync(x => x.TeachersID == ID);
-                 TeacherFound.Email = model.Email;
-                 TeacherFound.Name = model.Name;
+                 var teacherFound = await _context.Teachers.FirstAsync(x => x.TeachersID == id);
+                 teacherFound.Email = model.Email;
+                 teacherFound.Name = model.Name;
                  
-                 Context.Teachers.Update(TeacherFound);
-                 await Context.SaveChangesAsync();
+                 _context.Teachers.Update(teacherFound);
+                 await _context.SaveChangesAsync();
      
-                 var TeacherDto = _TeachersRepo.MapEntity(TeacherFound);
+                 var teacherDto = _teachersRepo.MapEntity(teacherFound);
                  
                  return Results.Ok(new {
-                     Teacher = TeacherDto
+                     teacher = teacherDto
                  });
              }
 
-             public async Task<IResult> PutTeachersProfile(string ID, string Authorization, TeachersProfileViewModel model)
+             public async Task<IResult> PutTeachersProfile(string id, string authorization, TeachersProfileViewModel model)
              {
-                 var TeachersCheck = new TeachersCheck(Context);
+                 var teachersCheck = new TeachersCheck(_context);
                  var errors = new Dictionary<string, dynamic>();
                  var responseValidator = ModelValidator.ValidateTeachersProfile(model);
 
-                 if (string.IsNullOrEmpty(ID))
-                     return await ApisEndpointServices.BadRequestWithMessage("No Teachers found with provided ID", errors);
+                 if (string.IsNullOrEmpty(id))
+                     return await ApisEndpointServices.BadRequestWithMessage("No Teachers found with provided id", errors);
 
                  if (!responseValidator.IsValid)
                      return await ApisEndpointServices.BadRequestWithMessage(responseValidator.Errors.ToList(), errors);
 
-                 var strToken = Authorization.Replace("Bearer ", "");
+                 var strToken = authorization.Replace("Bearer ", "");
                  var responseAuth = await _jwtService.ValidateTeachersJwt(strToken);
                  if (!responseAuth)
                      return Results.Unauthorized();
 
-                 var responseChecker = await TeachersCheck.CheckIfExistsTeachersAndTeachersProfile(ID);
+                 var responseChecker = await teachersCheck.CheckIfExistsTeachersAndTeachersProfile(id);
                  if (!responseChecker)
-                     return await ApisEndpointServices.BadRequestWithMessage("No teachers found with the provided ID.", errors);
+                     return await ApisEndpointServices.BadRequestWithMessage("No teachers found with the provided id.", errors);
 
-                 var teachersProfile = await Context.TeachersProfiles.FirstAsync(x => x.TeachersProfileID == ID);
+                 var teachersProfile = await _context.TeachersProfiles.FirstAsync(x => x.TeachersProfileID == id);
                  teachersProfile.TeachersName = model.Name;
                  teachersProfile.Bio = model.Bio;
                  teachersProfile.TeachersTraining = model.TeachersTraining;
                  teachersProfile.Description = model.Description;
 
-                 await Context.SaveChangesAsync();
+                 await _context.SaveChangesAsync();
 
-                 var teachersProfileDto = _TeachersProfileRepo.MapEntity(teachersProfile);
+                 var teachersProfileDto = _teachersProfileRepo.MapEntity(teachersProfile);
 
                  return Results.Ok(new
                  {

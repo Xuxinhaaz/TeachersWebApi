@@ -15,20 +15,24 @@ namespace Api.Services
 {
     public class JwtService : IJwtService
     {
-        private readonly IConfiguration configuration;
-        public JwtService(IConfiguration _Config)
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<JwtService> _logger;
+
+
+        public JwtService(IConfiguration configuration, ILogger<JwtService> logger)
         {
-            configuration = _Config;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         public string GenerateUserJwt(UserViewModel viewModel)
         {
             var handler = new JwtSecurityTokenHandler();
 
-            var JwtKey = Encoding.ASCII.GetBytes(configuration["Jwt"]);
+            var jwtKey = Encoding.ASCII.GetBytes(_configuration["Jwt"]);
 
             var signinCredentials = new SigningCredentials(
-                new SymmetricSecurityKey(JwtKey), 
+                new SymmetricSecurityKey(jwtKey), 
                 SecurityAlgorithms.HmacSha256Signature
             );
 
@@ -50,6 +54,8 @@ namespace Api.Services
             var token = handler.CreateToken(tokenDescriptor);
 
             var stringToken = handler.WriteToken(token);
+            
+            _logger.LogInformation("creating a jwt");
 
             return stringToken;
         }
@@ -58,10 +64,10 @@ namespace Api.Services
         {
             var handler = new JwtSecurityTokenHandler();
 
-            var JwtKey = Encoding.ASCII.GetBytes(configuration["Jwt"]);
+            var jwtKey = Encoding.ASCII.GetBytes(_configuration["Jwt"]);
 
             var signinCredentials = new SigningCredentials(
-                new SymmetricSecurityKey(JwtKey), 
+                new SymmetricSecurityKey(jwtKey), 
                 SecurityAlgorithms.HmacSha256Signature
             );
 
@@ -79,58 +85,79 @@ namespace Api.Services
                 Issuer = "http://localhost:5224",
                 Audience = "http://localhost:5224"
             };
-
             var token = handler.CreateToken(tokenDescriptor);
 
             var stringToken = handler.WriteToken(token);
+            
+            _logger.LogInformation("creating a jwt");
 
             return stringToken;
         }
 
         public async Task<bool> ValidateUsersJwt(string token)
         {
-            var handler = new JwtSecurityTokenHandler();
-
-            var JwtKey = Encoding.ASCII.GetBytes(configuration["Jwt"]);
-
-            var validationParameters = new TokenValidationParameters
+            try
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = "http://localhost:5224",
-                ValidAudience = "http://localhost:5224",
-                IssuerSigningKey = new SymmetricSecurityKey(JwtKey)
-            };
-
-            ClaimsPrincipal principal = handler.ValidateToken(token, validationParameters, out _);
-
-            var isTeacherClaim = principal.FindFirst("IsTeacher")?.Value;
-
-            return !string.IsNullOrEmpty(isTeacherClaim) && isTeacherClaim.ToLower() == "false";
+                var handler = new JwtSecurityTokenHandler();
+    
+                var jwtKey = Encoding.ASCII.GetBytes(_configuration["Jwt"]);
+    
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = "http://localhost:5224",
+                    ValidAudience = "http://localhost:5224",
+                    IssuerSigningKey = new SymmetricSecurityKey(jwtKey)
+                };
+                ClaimsPrincipal principal = handler.ValidateToken(token, validationParameters, out _);
+                
+                var isTeacherClaim = principal.FindFirst("IsTeacher")?.Value;
+                
+                _logger.LogInformation("checking jwt...");
+                
+                return !string.IsNullOrEmpty(isTeacherClaim) && isTeacherClaim.ToLower() == "false";
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.Message);
+                return false;
+            }
         }
 
         public async Task<bool> ValidateTeachersJwt(string token)
         {
-            var hanlder = new JwtSecurityTokenHandler();
 
-            var validationParameters = new TokenValidationParameters(){
-                ValidateAudience = true,
-                ValidateIssuer = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = "http://localhost:5224",
-                ValidAudience = "http://localhost:5224",
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["Jwt"]))
-            };
+            try
+            {
+                var hanlder = new JwtSecurityTokenHandler();
+    
+                var validationParameters = new TokenValidationParameters(){
+                    ValidateAudience = true,
+                    ValidateIssuer = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = "http://localhost:5224",
+                    ValidAudience = "http://localhost:5224",
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["Jwt"]))
+                };
 
-            ClaimsPrincipal response = hanlder.ValidateToken(token, validationParameters, out _);
+                ClaimsPrincipal response = hanlder.ValidateToken(token, validationParameters, out _);
+    
+                var isTeacherClaim = response.FindFirst("IsTeacher")?.Value;
+                
+                var isExpired = response.HasClaim(c => c.Type == ClaimTypes.Expiration && DateTime.Parse(c.Value) <= DateTime.UtcNow);
+                
+                _logger.LogInformation("checking jwt...");
 
-            var isTeacherClaim = response.FindFirst("IsTeacher")?.Value;
-            
-            var isExpired = response.HasClaim(c => c.Type == ClaimTypes.Expiration && DateTime.Parse(c.Value) <= DateTime.UtcNow);
-
-            return !string.IsNullOrEmpty(isTeacherClaim) && isTeacherClaim.ToLower() == "true" && !isExpired; 
+                return !string.IsNullOrEmpty(isTeacherClaim) && isTeacherClaim.ToLower() == "true" && !isExpired; 
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.Message);
+                return false;
+            }
         }
     }
 }
