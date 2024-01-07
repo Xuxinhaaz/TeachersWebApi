@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace Api.Models.Dtos
 {
-    public class UserDto : IModel
+    public class UserDto 
     {
         public string? Name { get; set; }
         public string? Email { get; set; }
-        public string? UserID { get; set; }
+        public string? UsersID { get; set; }
     }
 }

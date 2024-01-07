@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Api.Application.Services.Validator.ModelsValidator.PutValidator;
 using Api.Application.ViewModels;
+using Api.Application.ViewModels.PutViewModel;
+using Api.Application.ViewModels.Teachers;
 using Api.Application.ViewModels.Users;
 using Api.Models.Dtos;
 using Api.Services.ModelsValidator;
@@ -34,7 +37,7 @@ namespace Api.Services
             return result;
         }
 
-        public static ValidationResult ValidateTeacherModel(TeacherDto viewModel)
+        public static ValidationResult ValidateTeacherModel(TeacherViewModel viewModel)
         {
             var validator = new TeacherValidator();
 
@@ -43,7 +46,7 @@ namespace Api.Services
             return result;
         }
 
-        public static ValidationResult ValidateTeachersProfile(TeachersProfileDto viewModel)
+        public static ValidationResult ValidateTeachersProfile(TeachersProfileViewModel viewModel)
         {
             var validator = new TeachersProfileValidator();
 
@@ -51,5 +54,15 @@ namespace Api.Services
 
             return result;
         }
+
+        public static ValidationResult ValidatePutTeachersModel(PutTeachersViewModel viewModel)
+        {
+            var validator = new PutTeachersValidator();
+
+            var result = validator.Validate(viewModel);
+
+            return result;
+        }
+
     }
 }

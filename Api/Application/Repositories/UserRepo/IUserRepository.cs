@@ -10,8 +10,10 @@ namespace Api.Application.Repositories
 {
     public interface IUserRepository
     {
-        Task<List<UserDto>> Get(int pageNumber);
-        Task<UserDto> GetByID(string ID);
+        Task<List<UserModel>> Get(int pageNumber);
+        Task<UserModel> GetByID(string ID);
         UserModel Generate(UserViewModel viewModel);
+        Task<List<UserDto>> MapEntities(List<UserModel> userModels);
+        Task<UserDto> MapEntity(UserModel userModel);
     }
 }

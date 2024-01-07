@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Api.Application.ViewModels.Teachers;
 using Api.Models.Dtos;
 using FluentValidation;
 
 namespace Api.Services.ModelsValidator
 {
-    public class TeacherValidator : AbstractValidator<TeacherDto>
+    public class TeacherValidator : AbstractValidator<TeacherViewModel>
     {
         public TeacherValidator()
         {

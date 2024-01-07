@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Api.Models
 {
-    public class TeacherModel : IModel
+    public class TeacherModel
     {
         [Key]
         public string? TeachersID { get; set; }

@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Api.Application.ViewModels.Teachers;
 using Api.Models.Dtos;
 using FluentValidation;
 
 namespace Api.Services.ModelsValidator.TeachersRelationValidator
 {
-    public class TeachersProfileValidator : AbstractValidator<TeachersProfileDto>
+    public class TeachersProfileValidator : AbstractValidator<TeachersProfileViewModel>
     {
         public TeachersProfileValidator()
         {

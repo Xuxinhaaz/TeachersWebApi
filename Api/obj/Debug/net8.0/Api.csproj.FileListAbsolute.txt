@@ -5,6 +5,8 @@ C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\D
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\Debug\net8.0\Api.runtimeconfig.json
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\Debug\net8.0\Api.dll
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\Debug\net8.0\Api.pdb
+C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\Debug\net8.0\AutoMapper.dll
+C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\Debug\net8.0\AutoMapper.Extensions.Microsoft.DependencyInjection.dll
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\Debug\net8.0\Azure.Core.dll
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\Debug\net8.0\Azure.Identity.dll
 C:\Users\caiom\OneDrive\Documentos\VS Code\DotnetVSCode\TeachersWebApi\Api\bin\Debug\net8.0\BCrypt.Net-Next.dll

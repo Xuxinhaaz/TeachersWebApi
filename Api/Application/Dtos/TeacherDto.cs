@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 
 namespace Api.Models.Dtos
 {
-    public class TeacherDto : IModel
+    public class TeacherDto 
     {
-        public string Name { get; set; }
-        public string Password { get; set; }
-        public string Email { get; set; }
-        public string singleProperty { get; set; }
-        public string IsTeacher = "true";
+        public string? TeachersID { get; set; }
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public string? SingleProperty { get; set; }
+        public string? IsTeacher = "true";
     }
 }

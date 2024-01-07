@@ -9,10 +9,11 @@ using System.Security.Claims;
 using Api.Models;
 using Api.Models.Dtos;
 using Api.Application.ViewModels;
+using Api.Application.ViewModels.Teachers;
 
 namespace Api.Services
 {
-    public class JwtService
+    public class JwtService : IJwtService
     {
         private readonly IConfiguration configuration;
         public JwtService(IConfiguration _Config)
@@ -53,7 +54,7 @@ namespace Api.Services
             return stringToken;
         }
 
-        public string GenerateTeachersJwt(TeacherDto model)
+        public string GenerateTeachersJwt(TeacherViewModel model)
         {
             var handler = new JwtSecurityTokenHandler();
 
@@ -126,8 +127,10 @@ namespace Api.Services
             ClaimsPrincipal response = hanlder.ValidateToken(token, validationParameters, out _);
 
             var isTeacherClaim = response.FindFirst("IsTeacher")?.Value;
+            
+            var isExpired = response.HasClaim(c => c.Type == ClaimTypes.Expiration && DateTime.Parse(c.Value) <= DateTime.UtcNow);
 
-            return !string.IsNullOrEmpty(isTeacherClaim) && isTeacherClaim.ToLower() == "true"; 
+            return !string.IsNullOrEmpty(isTeacherClaim) && isTeacherClaim.ToLower() == "true" && !isExpired; 
         }
     }
 }

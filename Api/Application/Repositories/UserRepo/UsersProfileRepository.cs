@@ -7,6 +7,7 @@ using Api.Application.ViewModels.Users;
 using Api.Data;
 using Api.Models.Dtos;
 using Api.Models.UsersRelation;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api.Application.Repositories.User
@@ -14,29 +15,27 @@ namespace Api.Application.Repositories.User
     public class UsersProfileRepository : IUsersProfileRepository
     {
         private readonly AppDBContext _context;
+        private readonly IMapper _mapper;
 
-        public UsersProfileRepository(AppDBContext context)
+        public UsersProfileRepository(AppDBContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
-        public async Task<List<UsersProfileDto>> Get(int pageNumber)
+        public async Task<List<UsersProfile>> Get(int pageNumber)
         {
-            return await _context.UsersProfiles
-            .Skip(pageNumber * 5)
-            .Take(5)
-            .Select(x => new UsersProfileDto{
-                Bio = x.Bio,
-                Classroom = x.Classroom,
-                Description = x.Description,
-                Name = x.UserName
-            })
-            .ToListAsync();
+            return await _context.UsersProfiles.Skip(pageNumber * 5).Take(5).ToListAsync();
         }
 
-        public Task<UserDto> GetByID(string ID)
+        public async Task<UsersProfile> GetByID(string ID)
         {
-            throw new NotImplementedException();
+            return await _context.UsersProfiles.FirstAsync(x => x.ProfileID == ID);
+        }
+
+        public async Task<UsersProfile> GetByUsersID(string UsersID)
+        {
+            return await _context.UsersProfiles.FirstAsync(x => x.UsersProfileID == UsersID);
         }
 
         public async Task<UsersProfile> Generate(UsersProfileViewModel viewModel, string ID)
@@ -51,6 +50,20 @@ namespace Api.Application.Repositories.User
                 UsersProfileID = FindUser.UsersID,
                 UserName = viewModel.Name
             };
+        }
+
+        public List<UsersProfileDto> MapEntities(List<UsersProfile> usersProfiles)
+        {
+            var Dtos = _mapper.Map<List<UsersProfileDto>>(usersProfiles);
+
+            return Dtos;
+        }
+
+        public UsersProfileDto MapEntity(UsersProfile usersProfile)
+        {
+            var Dto = _mapper.Map<UsersProfileDto>(usersProfile);
+
+            return Dto;
         }
 
 

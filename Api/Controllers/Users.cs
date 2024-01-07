@@ -11,6 +11,7 @@ using Api.Models;
 using Api.Models.Dtos;
 using Api.Models.UsersRelation;
 using Api.Services;
+using AutoMapper;
 using BCrypt.Net;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
@@ -21,39 +22,43 @@ namespace Api.Controllers
     public class UsersController
     {
         private readonly AppDBContext _context;
-        private readonly IConfiguration Configuration;
-        private readonly UserRepository _UsersRepo;
+        private readonly IConfiguration _configuration;
+        private readonly IUserRepository _UsersRepo;
         private readonly UsersProfileRepository _UsersProfileRepo;
-        public UsersController(AppDBContext Context, IConfiguration configuration, UserRepository UsersRepo, UsersProfileRepository UsersProfileRepository)
+        private readonly IMapper _mapper;
+        private readonly IJwtService _jwtService;
+
+
+        public UsersController(
+            AppDBContext context, 
+            ConfigurationManager configuration, 
+            IUserRepository userRepository, 
+            UsersProfileRepository usersProfileRepository,
+            IJwtService jwtService)
         {
-            _context = Context;
-            Configuration = configuration;
-            _UsersRepo = UsersRepo;
-            _UsersProfileRepo = UsersProfileRepository;
+            _context = context;
+            _configuration = configuration;
+            _UsersRepo = userRepository;
+            _UsersProfileRepo = usersProfileRepository;
+            _jwtService = jwtService;
         }
 
         public async Task<IResult> PostNewUser(UserViewModel viewModel)
         {
             var result = ModelValidator.ValidateUserModel(viewModel);
             var errors = new Dictionary<string, dynamic>();
-            var jwtService = new JwtService(Configuration);
 
             if(!result.IsValid)
                 return await ApisEndpointServices.BadRequestWithMessage(result.Errors.ToList(), errors);
 
-
-            var Token = jwtService.GenerateUserJwt(viewModel);
+            var Token = _jwtService.GenerateUserJwt(viewModel);
 
             var UserModel = _UsersRepo.Generate(viewModel);
 
             await _context.Users.AddAsync(UserModel);
             await _context.SaveChangesAsync();
 
-            var User = new UserDto{
-                Email = UserModel.Email,
-                UserID = UserModel.UsersID,
-                Name = UserModel.Name
-            };
+            var User = _UsersRepo.MapEntity(UserModel);
 
             return Results.Ok(new { 
                 User,
@@ -61,9 +66,14 @@ namespace Api.Controllers
             });
         }
 
-        public async Task<IResult> GetUserByID(string ID)
+        public async Task<IResult> GetUserByID(string ID, string Authorization)
         {
             var errors = new Dictionary<string, dynamic>();
+            
+            var strToken = Authorization.Replace("Bearer ", "");
+            var responseAuth = await _jwtService.ValidateUsersJwt(strToken);
+            if (!responseAuth)
+                return Results.Unauthorized();
 
             var tryFindUser = await _context.Users.AnyAsync(x => x.UsersID == ID);
 
@@ -77,22 +87,34 @@ namespace Api.Controllers
             });
         }
 
-        public async Task<IResult> GetUsers(int pageNumber)
+        public async Task<IResult> GetUsers(int pageNumber, string Authorization)
         {
-            var Users = await _UsersRepo.Get(pageNumber);
+            var strToken = Authorization.Replace("Bearer ", "");
+            var responseAuth = await _jwtService.ValidateUsersJwt(strToken);
+            if (!responseAuth)
+                return Results.Unauthorized();
+            
+            var UsersModel = await _UsersRepo.Get(pageNumber);
+
+            var UsersDto = await _UsersRepo.MapEntities(UsersModel);
 
             return Results.Ok(new { 
-                Users
+                Users = UsersDto
             });
         }
 
-        public async Task<IResult> PostUsersProfile(UsersProfileViewModel viewModel, string ID)
+        public async Task<IResult> PostUsersProfile(UsersProfileViewModel viewModel, string ID, string Authorization)
         {
             var errors = new Dictionary<string, dynamic>();
             var result = ModelValidator.ValidateUsersProfile(viewModel);
             
             if(string.IsNullOrEmpty(ID))
                 return await ApisEndpointServices.BadRequestWithMessage("Teacher ID must not be empty.", errors);
+            
+            var strToken = Authorization.Replace("Bearer ", "");
+            var responseAuth = await _jwtService.ValidateUsersJwt(strToken);
+            if (!responseAuth)
+                return Results.Unauthorized();
 
             if(!result.IsValid)
                 return await ApisEndpointServices.BadRequestWithMessage(result.Errors.ToList(), errors);
@@ -102,23 +124,30 @@ namespace Api.Controllers
                 return await ApisEndpointServices.BadRequestWithMessage("No teacher found with the provided ID.", errors);
             var User = await _context.Users.FirstAsync(x => x.UsersID == ID);
 
-            var UsersProfile = await _UsersProfileRepo.Generate(viewModel, ID);
+            var UsersProfileModel = await _UsersProfileRepo.Generate(viewModel, ID);
 
-            await _context.UsersProfiles.AddAsync(UsersProfile);
+            await _context.UsersProfiles.AddAsync(UsersProfileModel);
             await _context.SaveChangesAsync();
 
+            var UsersProfileDto = _UsersProfileRepo.MapEntity(UsersProfileModel);
+
             return Results.Ok(new {
-                UsersProfile
+                UsersProfile = UsersProfileDto
             });
         }
 
-        public async Task<IResult> DeleteUser(string ID)
+        public async Task<IResult> DeleteUser(string ID, string Authorization)
         {
             var errors = new Dictionary<string, dynamic>();
 
             if(string.IsNullOrEmpty(ID))
                 return await ApisEndpointServices.BadRequestWithMessage("Teacher ID must not be empty.", errors);
 
+            var strToken = Authorization.Replace("Bearer ", "");
+            var responseAuth = await _jwtService.ValidateTeachersJwt(strToken);
+            if (!responseAuth)
+                return Results.Unauthorized();
+            
             var anyUser = await _context.Users.AnyAsync(x => x.UsersID == ID);
             var anyUsersProfile = await _context.UsersProfiles.AnyAsync(x => x.ProfileID == ID);
 
@@ -127,7 +156,6 @@ namespace Api.Controllers
 
             var User = await _context.Users.FirstAsync(x => x.UsersID == ID);
             var UsersProfile = await _context.UsersProfiles.FirstAsync(x => x.ProfileID == ID);
-
 
             _context.Users.Remove(User);
             _context.UsersProfiles.Remove(UsersProfile);
@@ -140,8 +168,6 @@ namespace Api.Controllers
 
         public async Task<IResult> DeleteMax()
         {
-            
-
             _context.Users.RemoveRange(await _context.Users.ToListAsync());
             await _context.SaveChangesAsync();
 

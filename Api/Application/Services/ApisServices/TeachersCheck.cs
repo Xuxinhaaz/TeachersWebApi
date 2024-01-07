@@ -24,6 +24,13 @@ namespace Api.Services
             return anyTeachersProfile;
         }
 
+        public async Task<bool> CheckIfExistsTeacher(string ID)
+        {
+            var anyTeachersProfile = await Context.Teachers.AnyAsync(x => x.TeachersID == ID);
+
+            return anyTeachersProfile;
+        }
+
         public async Task<bool> CheckIfExistsTeachersAndTeachersProfile(string ID)
         {
             var anyTeachersProfile = await Context.TeachersProfiles.AnyAsync(x => x.TeachersProfileID == ID);
